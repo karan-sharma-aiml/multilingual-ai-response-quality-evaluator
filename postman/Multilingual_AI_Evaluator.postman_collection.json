@@ -1,0 +1,778 @@
+{
+  "info": {
+    "_postman_id": "6f1d2d0e-0a10-4d2a-9d58-5a1e0b6f0002",
+    "name": "Multilingual AI Response Quality Evaluator API",
+    "description": "REST API (Parts 2-3). Set 'api_key' in the environment when API_KEYS is configured. Run requests in order; 'Evaluate' stores result_id.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/health",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "health"
+          ]
+        },
+        "description": "",
+        "auth": {
+          "type": "noauth"
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "pm.test('Status ok', () => pm.expect(pm.response.json().status).to.be.oneOf(['ok','degraded']));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Evaluate (rule engine + Gemini)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/evaluate",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "evaluate"
+          ]
+        },
+        "description": "Falls back to rule_based (see gemini.error) when GEMINI_API_KEY is missing or Gemini fails.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"question\": \"What is cloud computing?\",\n  \"response\": \"Cloud computing means renting servers, storage and software over the internet instead of owning hardware. Companies pay only for what they use.\",\n  \"language\": \"English\",\n  \"reference_answer\": \"Cloud computing delivers computing services over the internet on a pay-as-you-go basis.\",\n  \"category\": \"Technology\",\n  \"use_gemini\": true\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+              "const body = pm.response.json();",
+              "pm.environment.set('result_id', body.id);",
+              "pm.test('Has overall score', () => pm.expect(body.overall_score).to.be.within(0, 100));",
+              "pm.test('Method present', () => pm.expect(['hybrid','rule_based']).to.include(body.evaluation_method));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Evaluate (rule engine only)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/evaluate",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "evaluate"
+          ]
+        },
+        "description": "",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"question\": \"Pourquoi le ciel est-il bleu ?\",\n  \"response\": \"Le ciel est bleu car l'atmosphère diffuse davantage la lumière bleue du Soleil.\",\n  \"language\": \"French\",\n  \"use_gemini\": false\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+              "pm.test('Rule based', () => pm.expect(pm.response.json().evaluation_method).to.eql('rule_based'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Evaluate - validation error (invalid language)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/evaluate",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "evaluate"
+          ]
+        },
+        "description": "",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"question\": \"What is gravity?\",\n  \"response\": \"A force.\",\n  \"language\": \"Klingon\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 422', () => pm.response.to.have.status(422));",
+              "pm.test('Error format', () => pm.expect(pm.response.json().error.code).to.eql('validation_error'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Batch evaluate (CSV upload)",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/batch-evaluate",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "batch-evaluate"
+          ]
+        },
+        "description": "Select datasets/batch_sample.csv in the file field. The last row is intentionally invalid.",
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "file",
+              "type": "file",
+              "src": "datasets/batch_sample.csv"
+            },
+            {
+              "key": "use_gemini",
+              "value": "false",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "const b = pm.response.json();",
+              "pm.test('Counts add up', () => pm.expect(b.success_count + b.failed_count).to.eql(b.total_records));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "List results",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/results?page=1&page_size=10&sort_by=overall_score&order=desc&language=English",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "results"
+          ],
+          "query": [
+            {
+              "key": "page",
+              "value": "1"
+            },
+            {
+              "key": "page_size",
+              "value": "10"
+            },
+            {
+              "key": "sort_by",
+              "value": "overall_score"
+            },
+            {
+              "key": "order",
+              "value": "desc"
+            },
+            {
+              "key": "language",
+              "value": "English"
+            },
+            {
+              "key": "evaluation_method",
+              "value": "hybrid",
+              "disabled": true
+            },
+            {
+              "key": "category",
+              "value": "Technology",
+              "disabled": true
+            },
+            {
+              "key": "min_overall_score",
+              "value": "50",
+              "disabled": true
+            }
+          ]
+        },
+        "description": "Disabled query params (evaluation_method, category, min_overall_score) can be enabled in Postman."
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "pm.test('Paginated', () => pm.expect(pm.response.json()).to.have.keys('items','total','page','page_size','total_pages'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get result by id",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/results/{{result_id}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "results",
+            "{{result_id}}"
+          ]
+        },
+        "description": ""
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Compare two responses",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/compare",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "compare"
+          ]
+        },
+        "description": "",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"question\": \"What is the capital of France?\",\n  \"language\": \"English\",\n  \"reference_answer\": \"Paris is the capital of France.\",\n  \"response_a\": \"The capital of France is Paris.\",\n  \"response_b\": \"The capital of France is Berlin, a large city in Germany.\",\n  \"use_gemini\": false\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "pm.test('Has verdict', () => pm.expect(['A','B','tie']).to.include(pm.response.json().better_response));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Delete result",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/results/{{result_id}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "results",
+            "{{result_id}}"
+          ]
+        },
+        "description": ""
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get deleted result (404)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/results/{{result_id}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "results",
+            "{{result_id}}"
+          ]
+        },
+        "description": ""
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 404', () => pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Analytics",
+      "item": [
+        {
+          "name": "Overview",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/analytics/overview",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "analytics",
+                "overview"
+              ]
+            },
+            "description": ""
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Has total', () => pm.expect(pm.response.json()).to.have.property('total_evaluations'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Languages",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/analytics/languages",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "analytics",
+                "languages"
+              ]
+            },
+            "description": ""
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Has languages', () => pm.expect(pm.response.json()).to.have.property('languages'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Categories",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/analytics/categories",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "analytics",
+                "categories"
+              ]
+            },
+            "description": ""
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Hallucination types",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/analytics/hallucinations",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "analytics",
+                "hallucinations"
+              ]
+            },
+            "description": ""
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Low quality (< 50)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/analytics/low-quality?page=1&page_size=20",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "analytics",
+                "low-quality"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "page_size",
+                  "value": "20"
+                },
+                {
+                  "key": "threshold",
+                  "value": "50",
+                  "disabled": true
+                },
+                {
+                  "key": "language",
+                  "value": "English",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('All below threshold', () => pm.response.json().items.forEach(i => pm.expect(i.overall_score).to.be.below(pm.response.json().threshold)));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Trends (daily/weekly/monthly)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/analytics/trends?period=all",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "analytics",
+                "trends"
+              ],
+              "query": [
+                {
+                  "key": "period",
+                  "value": "all"
+                },
+                {
+                  "key": "start_date",
+                  "value": "2026-01-01",
+                  "disabled": true
+                },
+                {
+                  "key": "end_date",
+                  "value": "2026-12-31",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Reports",
+      "item": [
+        {
+          "name": "Export CSV",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/reports/csv?limit=1000",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "reports",
+                "csv"
+              ],
+              "query": [
+                {
+                  "key": "language",
+                  "value": "English",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "1000"
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('CSV', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('text/csv'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Export Excel",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/reports/excel",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "reports",
+                "excel"
+              ]
+            },
+            "description": ""
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('XLSX', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('spreadsheetml'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Export PDF",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/reports/pdf",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "reports",
+                "pdf"
+              ]
+            },
+            "description": ""
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('PDF', () => pm.expect(pm.response.headers.get('Content-Type')).to.eql('application/pdf'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "auth": {
+    "type": "apikey",
+    "apikey": [
+      {
+        "key": "key",
+        "value": "X-API-Key",
+        "type": "string"
+      },
+      {
+        "key": "value",
+        "value": "{{api_key}}",
+        "type": "string"
+      },
+      {
+        "key": "in",
+        "value": "header",
+        "type": "string"
+      }
+    ]
+  }
+}

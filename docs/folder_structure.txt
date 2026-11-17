@@ -1,0 +1,156 @@
+multilingual-ai-response-evaluator/
+├── .github/
+│   └── workflows/
+│       └── ci.yml
+├── backend/
+│   └── app/
+│       ├── analytics/
+│       │   ├── __init__.py
+│       │   ├── charts.py
+│       │   ├── frames.py
+│       │   ├── generate_charts.py
+│       │   ├── hallucination_types.py
+│       │   └── service.py
+│       ├── api/
+│       │   ├── routes/
+│       │   │   ├── __init__.py
+│       │   │   ├── analytics.py
+│       │   │   ├── batch.py
+│       │   │   ├── evaluation.py
+│       │   │   ├── health.py
+│       │   │   ├── reports.py
+│       │   │   └── results.py
+│       │   ├── __init__.py
+│       │   ├── dependencies.py
+│       │   └── filters.py
+│       ├── core/
+│       │   ├── __init__.py
+│       │   ├── cache.py
+│       │   ├── config.py
+│       │   ├── error_handlers.py
+│       │   ├── exceptions.py
+│       │   ├── logging.py
+│       │   ├── middleware.py
+│       │   ├── rate_limit.py
+│       │   └── security.py
+│       ├── database/
+│       │   ├── __init__.py
+│       │   ├── base.py
+│       │   ├── init_db.py
+│       │   └── session.py
+│       ├── evaluator/
+│       │   ├── __init__.py
+│       │   ├── base.py
+│       │   ├── clarity.py
+│       │   ├── correctness.py
+│       │   ├── duplicate_detector.py
+│       │   ├── hallucination.py
+│       │   ├── overall_score.py
+│       │   ├── pipeline.py
+│       │   ├── relevance.py
+│       │   ├── rule_engine.py
+│       │   └── safety.py
+│       ├── ml/
+│       │   ├── __init__.py
+│       │   ├── config.py
+│       │   ├── labels.py
+│       │   ├── predict.py
+│       │   └── train_model.py
+│       ├── models/
+│       │   ├── __init__.py
+│       │   ├── entities.py
+│       │   └── evaluation_record.py
+│       ├── repositories/
+│       │   ├── __init__.py
+│       │   ├── base.py
+│       │   ├── evaluation_log_repository.py
+│       │   ├── evaluation_result_repository.py
+│       │   ├── language_repository.py
+│       │   └── response_repository.py
+│       ├── schemas/
+│       │   ├── __init__.py
+│       │   ├── analytics.py
+│       │   ├── api.py
+│       │   └── evaluation.py
+│       ├── services/
+│       │   ├── __init__.py
+│       │   ├── batch_service.py
+│       │   ├── database_service.py
+│       │   ├── evaluation_service.py
+│       │   ├── gemini_service.py
+│       │   ├── mappers.py
+│       │   └── report_service.py
+│       ├── utils/
+│       │   ├── __init__.py
+│       │   ├── dataset.py
+│       │   ├── language.py
+│       │   ├── lexicons.py
+│       │   ├── paths.py
+│       │   ├── phrase_matcher.py
+│       │   ├── sanitize.py
+│       │   ├── scoring.py
+│       │   ├── similarity.py
+│       │   └── text.py
+│       ├── __init__.py
+│       └── main.py
+├── datasets/
+│   ├── batch_sample.csv
+│   ├── generate_dataset.py
+│   └── sample_dataset.csv
+├── docker/
+│   └── entrypoint.sh
+├── docs/
+│   ├── screenshots/
+│   │   └── README.md
+│   ├── architecture.md
+│   └── RESUME_METRICS.md
+├── ml_artifacts/
+│   └── quality_classifier.joblib
+├── postman/
+│   ├── Multilingual_AI_Evaluator.postman_collection.json
+│   └── Multilingual_AI_Evaluator.postman_environment.json
+├── reports/
+│   ├── charts/
+│   │   ├── category_distribution.png
+│   │   ├── correlation_heatmap.png
+│   │   ├── hallucination_distribution.png
+│   │   ├── language_distribution.png
+│   │   ├── quality_score_distribution.png
+│   │   └── safety_score_distribution.png
+│   ├── ml/
+│   │   ├── classification_report.txt
+│   │   ├── confusion_matrix.png
+│   │   └── metrics.json
+│   └── sample_results.csv
+├── tests/
+│   ├── conftest.py
+│   ├── test_analytics.py
+│   ├── test_api.py
+│   ├── test_batch.py
+│   ├── test_correctness_clarity.py
+│   ├── test_database.py
+│   ├── test_duplicate_detector.py
+│   ├── test_gemini_service.py
+│   ├── test_hallucination_detector.py
+│   ├── test_ml.py
+│   ├── test_overall_score.py
+│   ├── test_performance.py
+│   ├── test_pipeline_and_dataset.py
+│   ├── test_relevance.py
+│   ├── test_reports.py
+│   ├── test_rule_engine.py
+│   ├── test_safety.py
+│   └── test_security.py
+├── .dockerignore
+├── .env.example
+├── .gitignore
+├── CONTRIBUTING.md
+├── docker-compose.yml
+├── Dockerfile
+├── LICENSE
+├── pyproject.toml
+├── pytest.ini
+├── README.md
+├── requirements-dev.txt
+├── requirements.txt
+└── run_demo.py

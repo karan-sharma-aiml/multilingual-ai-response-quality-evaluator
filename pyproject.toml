@@ -1,0 +1,28 @@
+[project]
+name = "multilingual-ai-response-evaluator"
+version = "1.0.0"
+description = "Enterprise-grade multilingual evaluation platform for LLM responses."
+requires-python = ">=3.12"
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+src = ["backend", "tests"]
+extend-exclude = ["reports", "ml_artifacts", "logs"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+ignore = [
+    "B008",  # FastAPI uses Depends()/Query() in argument defaults by design
+    "UP017",
+    "UP042",  # (str, Enum) kept for Python<3.11-style JSON compatibility
+    "B905",   # zip() lengths are equal by construction
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["E501", "B011", "E731"]
+"datasets/generate_dataset.py" = ["E501"]
+"backend/app/utils/lexicons.py" = ["E501"]
+"backend/app/ml/train_model.py" = ["E402"]
+"backend/app/analytics/charts.py" = ["E402", "E501"]
+"backend/app/services/report_service.py" = ["E501"]
